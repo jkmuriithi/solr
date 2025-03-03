@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
@@ -185,8 +187,31 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     this.queryParams = queryParams;
   }
 
-  /** This method defines the type of this Solr request. */
-  public abstract String getRequestType();
+  /**
+   * This method defines the intended type of this Solr request.
+   *
+   * <p>Subclasses should override this method instead of
+   *
+   * @see SolrRequest#getRequestType
+   */
+  protected SolrRequestType getBaseRequestType() {
+    return SolrRequestType.UNSPECIFIED;
+  }
+
+  /**
+   * Returns the <i>actual</i> type of this SolrRequest.
+   *
+   * Pattern matches on the underlying {@link SolrRequest} to identify ADMIN requests and other
+   * special cases. If no special case is identified, {@link SolrRequest#getBaseRequestType()} is
+   * returned.
+   */
+  public SolrRequestType getRequestType() {
+    if (CommonParams.ADMIN_PATHS.contains(getPath())) {
+      return SolrRequestType.ADMIN;
+    } else {
+      return getBaseRequestType();
+    }
+  }
 
   /**
    * The parameters for this request; never null. The runtime type may be mutable but modifications
@@ -208,6 +233,16 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    */
   public boolean requiresCollection() {
     return false;
+  }
+
+  /**
+   * Indicates if clients should make attempts to route this request to a shard leader, overriding
+   * typical client routing preferences for requests. Defaults to true.
+   *
+   * @see CloudSolrClient#isUpdatesToLeaders
+   */
+  public boolean shouldSendToLeaders() {
+    return true;
   }
 
   /**

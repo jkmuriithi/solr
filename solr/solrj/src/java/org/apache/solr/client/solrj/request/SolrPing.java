@@ -53,8 +53,9 @@ public class SolrPing extends CollectionRequiringSolrRequest<SolrPingResponse> {
   }
 
   @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
+  /** SolrPing is NOT considered an ADMIN request. */
+  protected SolrRequestType getBaseRequestType() {
+    return SolrRequestType.UNSPECIFIED;
   }
 
   /**
