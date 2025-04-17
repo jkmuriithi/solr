@@ -54,7 +54,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -88,7 +87,6 @@ import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;
 import org.apache.solr.handler.admin.api.ModifyParamSetAPI;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -371,7 +369,7 @@ public class SolrConfigHandler extends RequestHandlerBase
           }
         }
 
-        LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), req.getOriginalParams());
+        SolrQueryRequest r = req.subRequest(req.getOriginalParams());
         r.getContext().put(USEPARAM, useParams);
         NamedList<?> nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
         SolrPluginUtils.setDefaults(
@@ -967,7 +965,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     int maxWait;
 
     PerReplicaCallable(Replica replica, String prop, int expectedZkVersion, int maxWait) {
-      super(METHOD.GET, "/config/" + ZNODEVER);
+      super(METHOD.GET, "/config/" + ZNODEVER, SolrRequestType.ADMIN);
       this.replica = replica;
       this.expectedZkVersion = expectedZkVersion;
       this.prop = prop;
@@ -1030,11 +1028,6 @@ public class SolrConfigHandler extends RequestHandlerBase
     @Override
     protected SolrResponse createResponse(NamedList<Object> namedList) {
       return null;
-    }
-
-    @Override
-    public String getRequestType() {
-      return SolrRequest.SolrRequestType.ADMIN.toString();
     }
   }
 
